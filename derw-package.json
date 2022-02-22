@@ -1,0 +1,7 @@
+{
+    "name": "html-to-derw",
+    "exposing": [],
+    "dependencies": {
+        "derw-lang/stdlib": "main"
+    }
+}

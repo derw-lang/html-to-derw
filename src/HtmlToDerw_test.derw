@@ -1,0 +1,92 @@
+import "../derw-packages/derw-lang/stdlib/src/Test" as Test
+import "../derw-packages/derw-lang/stdlib/src/String" as String
+import "../derw-packages/derw-lang/stdlib/src/List" as List
+
+import "./HtmlToDerw" exposing (lex, lexToString, pageToString, parse, Page, Default, partition)
+
+testLexingDiv: boolean -> void
+testLexingDiv =
+    String.split "" "<div>Hello world</div>"
+        |> lex
+        |> lexToString
+        |> String.join ""
+        |> Test.equals "<div>Hello world</div>"
+
+
+testLexingNestedDiv: boolean -> void
+testLexingNestedDiv =
+    String.split "" "<div><div>Hello</div> <div>world</div></div>"
+        |> lex
+        |> lexToString
+        |> String.join ""
+        |> Test.equals "<div><div>Hello</div> <div>world</div></div>"
+
+testPartitionDiv: boolean -> void
+testPartitionDiv =
+    String.split "" "<div>Hello world</div>"
+        |> lex
+        |> partition
+        |> List.map lexToString
+        |> List.map (\x -> String.join "" x)
+        |> Test.equals [ "<div>Hello world</div>" ]
+
+
+testPartitionSiblingDiv: boolean -> void
+testPartitionSiblingDiv =
+    String.split "" "<div>Hello</div><div>world</div>"
+        |> lex
+        |> partition
+        |> List.map lexToString
+        |> List.map (\x -> String.join "" x)
+        |> Test.equals [ "<div>Hello</div>", "<div>world</div>" ]
+
+testPartitionSiblingDivWithSpace: boolean -> void
+testPartitionSiblingDivWithSpace =
+    String.split "" "<div>Hello</div> <div>world</div>"
+        |> lex
+        |> partition
+        |> List.map lexToString
+        |> List.map (\x -> String.join "" x)
+        |> Test.equals [ "<div>Hello</div>", " ", "<div>world</div>" ]
+
+testPartitionSiblingDivWithText: boolean -> void
+testPartitionSiblingDivWithText =
+    String.split "" "<div>Hello</div>world"
+        |> lex
+        |> partition
+        |> List.map lexToString
+        |> List.map (\x -> String.join "" x)
+        |> Test.equals [ "<div>Hello</div>", "world" ]
+
+testPartitionNestedDiv: boolean -> void
+testPartitionNestedDiv =
+    String.split "" "<div><div>Hello</div><div>world</div></div>"
+        |> lex
+        |> partition
+        |> List.map lexToString
+        |> List.map (\x -> String.join "" x)
+        |> Test.equals [ "<div><div>Hello</div><div>world</div></div>" ]
+
+testParsingDiv: boolean -> void
+testParsingDiv =
+    String.split "" "<div>Hello world</div>"
+        |> lex
+        |> parse
+        |> pageToString
+        |> Test.equals "<div>Hello world</div>"
+
+testParsingNestedDiv: boolean -> void
+testParsingNestedDiv =
+    String.split "" "<div><div>Hello</div><div>world</div></div>"
+        |> lex
+        |> parse
+        |> pageToString
+        |> Test.equals "<div><div>Hello</div><div>world</div></div>"
+
+testParsingSiblingDiv: boolean -> void
+testParsingSiblingDiv =
+    String.split "" "<div>Hello</div><div>world</div>"
+        |> lex
+        |> parse
+        |> pageToString
+        |> Test.equals "<html><div>Hello</div><div>world</div></html>"

@@ -1,0 +1,252 @@
+import "../derw-packages/derw-lang/stdlib/src/String" as String
+import "../derw-packages/derw-lang/stdlib/src/List" as List
+import "../derw-packages/derw-lang/stdlib/src/Maybe" exposing (Maybe, Just)
+exposing (lex, lexToString, Lexer, partition)
+exposing (parse, Page, pageToString, Default)
+
+
+type Lexer =
+    OpenTag
+    | Identifier { value: List string }
+    | Assign
+    | Speech
+    | CloseSlash
+    | CloseTag
+
+type alias Split = {
+    left: List string,
+    right: List string
+}
+
+collectIdentifiers: List string -> List string -> Split
+collectIdentifiers str left =
+    case str of
+        [] ->
+            { left: List.reverse left, right: [] }
+        "<" :: rest ->
+            { left: List.reverse left, right: str }
+        "=" :: rest ->
+            { left: List.reverse left, right: str }
+        `"` :: rest ->
+            { left: List.reverse left, right: str }
+        ">" :: rest ->
+            { left: List.reverse left, right: str }
+        char :: rest ->
+            collectIdentifiers rest (char :: left)
+        default ->
+            { left: [], right: [] }
+
+lex: List string -> List Lexer
+lex str =
+    case str of
+        "<" :: rest ->
+            OpenTag :: lex rest
+        "=" :: rest ->
+            Assign :: lex rest
+        `"` :: rest ->
+            Speech :: lex rest
+        ">" :: rest ->
+            CloseTag :: lex rest
+        "/" :: rest ->
+            CloseSlash :: lex rest
+        char :: rest ->
+            let
+                splited: Split
+                splited = collectIdentifiers str []
+            in
+                Identifier { value: splited.left } :: lex splited.right
+        default ->
+            [ ]
+
+type Page =
+    Tag { name: string, children: List Page }
+    | NormalString { value: List string }
+
+type State =
+    InTagOpener
+    | InTagContents { tagName: List string, children: List Page, depth: number }
+    | InTagCloser
+    | Default
+
+type alias SiblingSplit = {
+    upToNextSibling: List Lexer,
+    nextSiblingOnWards: List Lexer
+}
+
+splitOnSibling: number -> string -> List Lexer -> SiblingSplit -> SiblingSplit
+splitOnSibling depth rootTagName xs progress =
+    case xs of
+        -- <div>
+        OpenTag :: Identifier { value } :: CloseTag :: rest ->
+            let
+                currentElement: List Lexer
+                currentElement =
+                    OpenTag :: Identifier { value: value } :: CloseTag :: []
+
+                upToNextSibling : List Lexer
+                upToNextSibling =
+                    List.append progress.upToNextSibling currentElement
+
+                newDepth: number
+                newDepth =
+                    if String.join "" value == rootTagName then
+                        depth + 1
+                    else
+                        depth
+            in
+                splitOnSibling newDepth rootTagName rest { upToNextSibling: upToNextSibling, nextSiblingOnWards: [] }
+
+        -- </div>
+        OpenTag :: CloseSlash :: Identifier { value } :: CloseTag :: rest ->
+            let
+                currentElement: List Lexer
+                currentElement =
+                    OpenTag :: CloseSlash :: Identifier { value: value } :: CloseTag :: []
+
+                upToNextSibling : List Lexer
+                upToNextSibling =
+                    List.append progress.upToNextSibling currentElement
+            in
+                if depth == 1 then
+                    {
+                        upToNextSibling: upToNextSibling,
+                        nextSiblingOnWards: rest
+                    }
+                else
+                    let
+                        newDepth: number
+                        newDepth =
+                            if String.join "" value == rootTagName then
+                                depth - 1
+                            else
+                                depth
+                    in
+                        splitOnSibling newDepth rootTagName rest { upToNextSibling: upToNextSibling, nextSiblingOnWards: [] }
+
+        elem :: rest ->
+            let
+                upToNextSibling : List Lexer
+                upToNextSibling =
+                    List.append progress.upToNextSibling [ elem ]
+            in
+                splitOnSibling depth rootTagName rest { upToNextSibling: upToNextSibling, nextSiblingOnWards: [] }
+
+        default ->
+            { upToNextSibling: [], nextSiblingOnWards: [] }
+
+
+
+partitionHelper: number -> List Lexer -> List (List Lexer)
+partitionHelper depth xs =
+    case xs of
+        OpenTag :: Identifier { value } :: CloseTag :: rest ->
+            let
+                split: SiblingSplit
+                split =
+                    splitOnSibling 0 (String.join "" value) xs { upToNextSibling: [], nextSiblingOnWards: [] }
+
+                collected: List Lexer
+                collected =
+                    split.upToNextSibling
+            in
+                collected :: partitionHelper 0 split.nextSiblingOnWards
+
+        Identifier { value } :: rest ->
+            [ Identifier { value: value } ] :: partitionHelper 0 rest
+
+        default ->
+            [  ]
+
+partition: List Lexer -> List (List Lexer)
+partition xs =
+    partitionHelper 0 xs
+
+dropClosingTag: List Lexer -> List Lexer
+dropClosingTag xs =
+    case xs of
+        OpenTag :: CloseSlash :: Identifier { value } :: CloseTag :: [] ->
+            []
+        head :: rest ->
+            head :: dropClosingTag rest
+        default ->
+            []
+
+parse: List Lexer -> Page
+parse lexed =
+    let
+        partitioned: List (List Lexer)
+        partitioned =
+            partition lexed
+    in
+        case partitioned of
+            [] ->
+                Tag { name: "html", children: [] }
+
+            single :: [] ->
+                case single of
+                    OpenTag :: Identifier { value } :: CloseTag :: rest ->
+                        let
+                            paritionedChildren: List Page
+                            paritionedChildren =
+                                dropClosingTag rest
+                                    |> partition
+                                    |> List.map parse
+                        in
+                            Tag { name: String.join "" value, children: paritionedChildren }
+
+
+                    Identifier { value } :: [] ->
+                        NormalString { value: value }
+
+                    default ->
+                        Tag { name: "html", children: []}
+
+            default ->
+                Tag { name: "html", children: List.map parse partitioned }
+
+lexToString: List Lexer -> List string
+lexToString lexed =
+    case lexed of
+        OpenTag :: rest ->
+            "<" :: lexToString rest
+        Assign :: rest ->
+            "=" :: lexToString rest
+        Speech :: rest ->
+            `"` :: lexToString rest
+        CloseTag :: rest ->
+            ">" :: lexToString rest
+        CloseSlash :: rest ->
+            "/" :: lexToString rest
+        Identifier { value } :: rest ->
+            String.join "" value :: lexToString rest
+        default ->
+            [ ]
+
+pageToString: Page -> string
+pageToString page =
+    case page of
+        NormalString { value } ->
+            String.join "" value
+        Tag { name, children } ->
+            let
+                contents: string
+                contents =
+                    String.join "" (List.map pageToString children)
+            in
+                `<${name}>${contents}</${name}>`
+
+htmlToDerw: string -> string
+htmlToDerw input =
+    input
+
+stringify: any -> string
+stringify x =
+    JSON.stringify x null 4
+
+-- main: void
+-- main =
+--     String.split "" "<div><div>Hello</div> <div>world</div></div>"
+--         |> lex
+--         |> parse Default
+--         |> stringify
+--         |> globalThis.console.log

@@ -22,6 +22,20 @@ type alias GenericSplit a = {
     right: List a
 }
 
+type alias Attribute = {
+    name: string,
+    value: string
+}
+
+type Page =
+    Tag { name: string, children: List Page, attributes: List Attribute }
+    | NormalString { value: List string }
+
+type alias SiblingSplit = {
+    upToNextSibling: List Lexer,
+    nextSiblingOnWards: List Lexer
+}
+
 collectIdentifiers: List string -> List string -> GenericSplit string
 collectIdentifiers str left =
     case str of
@@ -66,19 +80,6 @@ lex str =
         default ->
             [ ]
 
-type alias Attribute = {
-    name: string,
-    value: string
-}
-
-type Page =
-    Tag { name: string, children: List Page, attributes: List Attribute }
-    | NormalString { value: List string }
-
-type alias SiblingSplit = {
-    upToNextSibling: List Lexer,
-    nextSiblingOnWards: List Lexer
-}
 
 splitOnSibling: number -> string -> List Lexer -> SiblingSplit -> SiblingSplit
 splitOnSibling depth rootTagName xs progress =

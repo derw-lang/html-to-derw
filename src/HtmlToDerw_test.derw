@@ -2,7 +2,7 @@ import "../derw-packages/derw-lang/stdlib/src/Test" as Test
 import "../derw-packages/derw-lang/stdlib/src/String" as String
 import "../derw-packages/derw-lang/stdlib/src/List" as List
 
-import "./HtmlToDerw" exposing (lex, lexToString, pageToString, parse, Page, Default, partition)
+import "./HtmlToDerw" exposing (lex, lexToString, pageToString, parse, Page, Default, partition, generateDerw, combineIdentifiers, Identifier, Space)
 
 testLexingDiv: boolean -> void
 testLexingDiv =
@@ -12,6 +12,13 @@ testLexingDiv =
         |> String.join ""
         |> Test.equals "<div>Hello world</div>"
 
+testLexingAttributeDiv: boolean -> void
+testLexingAttributeDiv =
+    String.split "" `<div class="navbar-brand">Hello world</div>`
+        |> lex
+        |> lexToString
+        |> String.join ""
+        |> Test.equals `<div class="navbar-brand">Hello world</div>`
 
 testLexingNestedDiv: boolean -> void
 testLexingNestedDiv =
@@ -29,6 +36,16 @@ testPartitionDiv =
         |> List.map lexToString
         |> List.map (\x -> String.join "" x)
         |> Test.equals [ "<div>Hello world</div>" ]
+
+
+testPartitionAttributeDiv: boolean -> void
+testPartitionAttributeDiv =
+    String.split "" `<div class="navbar-brand">Hello world</div>`
+        |> lex
+        |> partition
+        |> List.map lexToString
+        |> List.map (\x -> String.join "" x)
+        |> Test.equals [`<div class="navbar-brand">Hello world</div>`]
 
 
 testPartitionSiblingDiv: boolean -> void
@@ -75,6 +92,14 @@ testParsingDiv =
         |> pageToString
         |> Test.equals "<div>Hello world</div>"
 
+testParsingAttributeDiv: boolean -> void
+testParsingAttributeDiv =
+    String.split "" `<div class="navbar-brand">Hello world</div>`
+        |> lex
+        |> parse
+        |> pageToString
+        |> Test.equals `<div class="navbar-brand">Hello world</div>`
+
 testParsingNestedDiv: boolean -> void
 testParsingNestedDiv =
     String.split "" "<div><div>Hello</div><div>world</div></div>"
@@ -90,3 +115,45 @@ testParsingSiblingDiv =
         |> parse
         |> pageToString
         |> Test.equals "<html><div>Hello</div><div>world</div></html>"
+
+testGeneratingDiv: boolean -> void
+testGeneratingDiv =
+    String.split "" "<div>Hello world</div>"
+        |> lex
+        |> parse
+        |> generateDerw
+        |> Test.equals `div [ ] [ ] [ text "Hello world" ]`
+
+testGeneratingAttributeDiv: boolean -> void
+testGeneratingAttributeDiv =
+    String.split "" `<div class="navbar-brand">Hello world</div>`
+        |> lex
+        |> parse
+        |> generateDerw
+        |> Test.equals `div [ ] [ attribute "class" "navbar-brand" ] [ text "Hello world" ]`
+
+testGeneratingNestedDiv: boolean -> void
+testGeneratingNestedDiv =
+    String.split "" "<div><div>Hello</div><div>world</div></div>"
+        |> lex
+        |> parse
+        |> generateDerw
+        |> Test.equals `div [ ] [ ] [ div [ ] [ ] [ text "Hello" ], div [ ] [ ] [ text "world" ] ]`
+
+testGeneratingSiblingDiv: boolean -> void
+testGeneratingSiblingDiv =
+    String.split "" "<div>Hello</div><div>world</div>"
+        |> lex
+        |> parse
+        |> generateDerw
+        |> Test.equals `html [ ] [ ] [ div [ ] [ ] [ text "Hello" ], div [ ] [ ] [ text "world" ] ]`
+
+testCombineIdentifiers: boolean -> void
+testCombineIdentifiers =
+    String.split "" `Hello world`
+        |> lex
+        |> combineIdentifiers
+        |> Test.equals {
+            left: [ Identifier { value: String.split "" `Hello`}, Space, Identifier { value: String.split "" `world` } ],
+            right: []
+        }

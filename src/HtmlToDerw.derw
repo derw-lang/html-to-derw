@@ -1,10 +1,17 @@
 import "../derw-packages/derw-lang/stdlib/src/String" as String
+
 import "../derw-packages/derw-lang/stdlib/src/List" as List
-import "../derw-packages/derw-lang/stdlib/src/Maybe" exposing (Maybe, Just)
+
+import "../derw-packages/derw-lang/stdlib/src/Maybe" exposing ( Maybe, Just )
+
 exposing (lex, lexToString, Lexer, partition)
+
 exposing (parse, Page, pageToString)
+
 exposing (combineIdentifiers)
+
 exposing (Identifier, Space)
+
 exposing (generateDerw)
 
 type Lexer =
@@ -15,7 +22,6 @@ type Lexer =
     | Speech
     | CloseSlash
     | CloseTag
-
 
 type alias GenericSplit a = {
     left: List a,
@@ -28,7 +34,9 @@ type alias Attribute = {
 }
 
 type Page =
-    Tag { name: string, children: List Page, attributes: List Attribute }
+    Tag { name: string,
+        children: List Page,
+        attributes: List Attribute }
     | NormalString { value: List string }
 
 type alias SiblingSplit = {
@@ -40,51 +48,85 @@ collectIdentifiers: List string -> List string -> GenericSplit string
 collectIdentifiers str left =
     case str of
         [] ->
-            { left: List.reverse left, right: [] }
+            {
+                left: List.reverse left,
+                right: [ ]
+            }
+
         "<" :: rest ->
-            { left: List.reverse left, right: str }
+            {
+                left: List.reverse left,
+                right: str
+            }
+
         "=" :: rest ->
-            { left: List.reverse left, right: str }
+            {
+                left: List.reverse left,
+                right: str
+            }
+
         `"` :: rest ->
-            { left: List.reverse left, right: str }
+            {
+                left: List.reverse left,
+                right: str
+            }
+
         ">" :: rest ->
-            { left: List.reverse left, right: str }
+            {
+                left: List.reverse left,
+                right: str
+            }
+
         " " :: rest ->
-            { left: List.reverse left, right: str }
+            {
+                left: List.reverse left,
+                right: str
+            }
+
         char :: rest ->
             collectIdentifiers rest (char :: left)
+
         default ->
-            { left: [], right: [] }
+            {
+                left: [ ],
+                right: [ ]
+            }
 
 lex: List string -> List Lexer
 lex str =
     case str of
         "<" :: rest ->
             OpenTag :: lex rest
+
         "=" :: rest ->
             Assign :: lex rest
+
         `"` :: rest ->
             Speech :: lex rest
+
         ">" :: rest ->
             CloseTag :: lex rest
+
         "/" :: rest ->
             CloseSlash :: lex rest
+
         " " :: rest ->
             Space :: lex rest
+
         char :: rest ->
             let
                 splited: GenericSplit string
-                splited = collectIdentifiers str []
+                splited =
+                    collectIdentifiers str [ ]
             in
                 Identifier { value: splited.left } :: lex splited.right
+
         default ->
             [ ]
-
 
 splitOnSibling: number -> string -> List Lexer -> SiblingSplit -> SiblingSplit
 splitOnSibling depth rootTagName xs progress =
     case xs of
-        -- <div>
         OpenTag :: Identifier { value } :: rest ->
             let
                 upToClose: GenericSplit Lexer
@@ -95,7 +137,7 @@ splitOnSibling depth rootTagName xs progress =
                 currentElement =
                     OpenTag :: Identifier { value: value } :: upToClose.left
 
-                upToNextSibling : List Lexer
+                upToNextSibling: List Lexer
                 upToNextSibling =
                     List.append progress.upToNextSibling currentElement
 
@@ -106,16 +148,18 @@ splitOnSibling depth rootTagName xs progress =
                     else
                         depth
             in
-                splitOnSibling newDepth rootTagName upToClose.right { upToNextSibling: upToNextSibling, nextSiblingOnWards: [] }
+                splitOnSibling newDepth rootTagName upToClose.right {
+                    upToNextSibling: upToNextSibling,
+                    nextSiblingOnWards: [ ]
+                }
 
-        -- </div>
         OpenTag :: CloseSlash :: Identifier { value } :: CloseTag :: rest ->
             let
                 currentElement: List Lexer
                 currentElement =
-                    OpenTag :: CloseSlash :: Identifier { value: value } :: CloseTag :: []
+                    OpenTag :: CloseSlash :: Identifier { value: value } :: CloseTag :: [ ]
 
-                upToNextSibling : List Lexer
+                upToNextSibling: List Lexer
                 upToNextSibling =
                     List.append progress.upToNextSibling currentElement
             in
@@ -133,24 +177,36 @@ splitOnSibling depth rootTagName xs progress =
                             else
                                 depth
                     in
-                        splitOnSibling newDepth rootTagName rest { upToNextSibling: upToNextSibling, nextSiblingOnWards: [] }
+                        splitOnSibling newDepth rootTagName rest {
+                            upToNextSibling: upToNextSibling,
+                            nextSiblingOnWards: [ ]
+                        }
 
         elem :: rest ->
             let
-                upToNextSibling : List Lexer
+                upToNextSibling: List Lexer
                 upToNextSibling =
                     List.append progress.upToNextSibling [ elem ]
             in
-                splitOnSibling depth rootTagName rest { upToNextSibling: upToNextSibling, nextSiblingOnWards: [] }
+                splitOnSibling depth rootTagName rest {
+                    upToNextSibling: upToNextSibling,
+                    nextSiblingOnWards: [ ]
+                }
 
         default ->
-            { upToNextSibling: [], nextSiblingOnWards: [] }
+            {
+                upToNextSibling: [ ],
+                nextSiblingOnWards: [ ]
+            }
 
 splitOnCloseTag: List Lexer -> GenericSplit Lexer
 splitOnCloseTag xs =
     case xs of
         CloseTag :: rest ->
-            { left: [ CloseTag ], right: rest }
+            {
+                left: [ CloseTag ],
+                right: rest
+            }
 
         elem :: rest ->
             let
@@ -158,10 +214,16 @@ splitOnCloseTag xs =
                 onRest =
                     splitOnCloseTag rest
             in
-                { left: elem :: onRest.left, right: onRest.right }
+                {
+                    left: elem :: onRest.left,
+                    right: onRest.right
+                }
 
         default ->
-            { left : [], right: [] }
+            {
+                left: [ ],
+                right: [ ]
+            }
 
 partitionHelper: List Lexer -> List (List Lexer)
 partitionHelper xs =
@@ -170,7 +232,10 @@ partitionHelper xs =
             let
                 split: SiblingSplit
                 split =
-                    splitOnSibling 0 (String.join "" value) xs { upToNextSibling: [], nextSiblingOnWards: [] }
+                    splitOnSibling 0 (String.join "" value) xs {
+                        upToNextSibling: [ ],
+                        nextSiblingOnWards: [ ]
+                    }
 
                 collected: List Lexer
                 collected =
@@ -203,7 +268,7 @@ partitionHelper xs =
                 joined :: partitionHelper combined.right
 
         default ->
-            [  ]
+            [ ]
 
 partition: List Lexer -> List (List Lexer)
 partition xs =
@@ -213,11 +278,13 @@ dropClosingTag: List Lexer -> List Lexer
 dropClosingTag xs =
     case xs of
         OpenTag :: CloseSlash :: Identifier { value } :: CloseTag :: [] ->
-            []
+            [ ]
+
         head :: rest ->
             head :: dropClosingTag rest
+
         default ->
-            []
+            [ ]
 
 parseAttributes: List Lexer -> List Attribute
 parseAttributes xs =
@@ -226,12 +293,16 @@ parseAttributes xs =
             let
                 attr: Attribute
                 attr =
-                    { name: String.join "" value, value: String.join "" other }
+                    {
+                        name: String.join "" value,
+                        value: String.join "" other
+                    }
             in
                 attr :: parseAttributes rest
 
         Space :: rest ->
             parseAttributes rest
+
         default ->
             [ ]
 
@@ -244,7 +315,11 @@ parse lexed =
     in
         case partitioned of
             [] ->
-                Tag { name: "html", children: [], attributes: [] }
+                Tag {
+                    name: "html",
+                    children: [ ],
+                    attributes: [ ]
+                }
 
             single :: [] ->
                 case single of
@@ -264,8 +339,11 @@ parse lexed =
                             attributes =
                                 parseAttributes upToClose.left
                         in
-                            Tag { name: String.join "" value, children: paritionedChildren, attributes: attributes }
-
+                            Tag {
+                                name: String.join "" value,
+                                children: paritionedChildren,
+                                attributes: attributes
+                            }
 
                     Identifier { value } :: rest ->
                         let
@@ -292,28 +370,43 @@ parse lexed =
                             NormalString { value: List.append [ " " ] lexed }
 
                     default ->
-                        Tag { name: "html", children: [], attributes: [] }
+                        Tag {
+                            name: "html",
+                            children: [ ],
+                            attributes: [ ]
+                        }
 
             default ->
-                Tag { name: "html", children: List.map parse partitioned, attributes: [] }
+                Tag {
+                    name: "html",
+                    children: List.map parse partitioned,
+                    attributes: [ ]
+                }
 
 lexToString: List Lexer -> List string
 lexToString lexed =
     case lexed of
         OpenTag :: rest ->
             "<" :: lexToString rest
+
         Assign :: rest ->
             "=" :: lexToString rest
+
         Speech :: rest ->
             `"` :: lexToString rest
+
         CloseTag :: rest ->
             ">" :: lexToString rest
+
         CloseSlash :: rest ->
             "/" :: lexToString rest
+
         Space :: rest ->
             " " :: lexToString rest
+
         Identifier { value } :: rest ->
             String.join "" value :: lexToString rest
+
         default ->
             [ ]
 
@@ -340,6 +433,7 @@ pageToString page =
                 case attributes of
                     [] ->
                         `<${name}>${contents}</${name}>`
+
                     default ->
                         `<${name} ${attrs}>${contents}</${name}>`
 
@@ -356,7 +450,10 @@ combineIdentifiers xs =
                 splited =
                     combineIdentifiers rest
             in
-                { left: Identifier { value: value } :: splited.left, right: splited.right }
+                {
+                    left: Identifier { value: value } :: splited.left,
+                    right: splited.right
+                }
 
         Space :: rest ->
             let
@@ -364,10 +461,16 @@ combineIdentifiers xs =
                 splited =
                     combineIdentifiers rest
             in
-                { left: Space :: splited.left, right: splited.right }
+                {
+                    left: Space :: splited.left,
+                    right: splited.right
+                }
 
         default ->
-            { left: [], right: xs }
+            {
+                left: [ ],
+                right: xs
+            }
 
 generateDerw: Page -> string
 generateDerw page =
@@ -388,9 +491,9 @@ generateDerw page =
                 case attributes of
                     [] ->
                         `${name} [ ] [ ] [ ${contents} ]`
+
                     default ->
                         `${name} [ ] [ ${attrs} ] [ ${contents} ]`
-
 
 htmlToDerw: string -> string
 htmlToDerw input =

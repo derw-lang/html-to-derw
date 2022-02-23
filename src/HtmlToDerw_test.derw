@@ -1,11 +1,13 @@
 import "../derw-packages/derw-lang/stdlib/src/Test" as Test
+
 import "../derw-packages/derw-lang/stdlib/src/String" as String
+
 import "../derw-packages/derw-lang/stdlib/src/List" as List
 
-import "./HtmlToDerw" exposing (lex, lexToString, pageToString, parse, Page, partition, generateDerw, combineIdentifiers, Identifier, Space)
+import "./HtmlToDerw" exposing ( lex, lexToString, pageToString, parse, Page, partition, generateDerw, combineIdentifiers, Identifier, Space )
 
 testLexingDiv: boolean -> void
-testLexingDiv =
+testLexingDiv _0 =
     String.split "" "<div>Hello world</div>"
         |> lex
         |> lexToString
@@ -13,7 +15,7 @@ testLexingDiv =
         |> Test.equals "<div>Hello world</div>"
 
 testLexingAttributeDiv: boolean -> void
-testLexingAttributeDiv =
+testLexingAttributeDiv _0 =
     String.split "" `<div class="navbar-brand">Hello world</div>`
         |> lex
         |> lexToString
@@ -21,7 +23,7 @@ testLexingAttributeDiv =
         |> Test.equals `<div class="navbar-brand">Hello world</div>`
 
 testLexingNestedDiv: boolean -> void
-testLexingNestedDiv =
+testLexingNestedDiv _0 =
     String.split "" "<div><div>Hello</div> <div>world</div></div>"
         |> lex
         |> lexToString
@@ -29,7 +31,7 @@ testLexingNestedDiv =
         |> Test.equals "<div><div>Hello</div> <div>world</div></div>"
 
 testPartitionDiv: boolean -> void
-testPartitionDiv =
+testPartitionDiv _0 =
     String.split "" "<div>Hello world</div>"
         |> lex
         |> partition
@@ -37,46 +39,54 @@ testPartitionDiv =
         |> List.map (\x -> String.join "" x)
         |> Test.equals [ "<div>Hello world</div>" ]
 
-
 testPartitionAttributeDiv: boolean -> void
-testPartitionAttributeDiv =
+testPartitionAttributeDiv _0 =
     String.split "" `<div class="navbar-brand">Hello world</div>`
         |> lex
         |> partition
         |> List.map lexToString
         |> List.map (\x -> String.join "" x)
-        |> Test.equals [`<div class="navbar-brand">Hello world</div>`]
-
+        |> Test.equals [ `<div class="navbar-brand">Hello world</div>` ]
 
 testPartitionSiblingDiv: boolean -> void
-testPartitionSiblingDiv =
+testPartitionSiblingDiv _0 =
     String.split "" "<div>Hello</div><div>world</div>"
         |> lex
         |> partition
         |> List.map lexToString
         |> List.map (\x -> String.join "" x)
-        |> Test.equals [ "<div>Hello</div>", "<div>world</div>" ]
+        |> Test.equals [
+        "<div>Hello</div>",
+        "<div>world</div>"
+    ]
 
 testPartitionSiblingDivWithSpace: boolean -> void
-testPartitionSiblingDivWithSpace =
+testPartitionSiblingDivWithSpace _0 =
     String.split "" "<div>Hello</div> <div>world</div>"
         |> lex
         |> partition
         |> List.map lexToString
         |> List.map (\x -> String.join "" x)
-        |> Test.equals [ "<div>Hello</div>", " ", "<div>world</div>" ]
+        |> Test.equals [
+        "<div>Hello</div>",
+        " ",
+        "<div>world</div>"
+    ]
 
 testPartitionSiblingDivWithText: boolean -> void
-testPartitionSiblingDivWithText =
+testPartitionSiblingDivWithText _0 =
     String.split "" "<div>Hello</div>world"
         |> lex
         |> partition
         |> List.map lexToString
         |> List.map (\x -> String.join "" x)
-        |> Test.equals [ "<div>Hello</div>", "world" ]
+        |> Test.equals [
+        "<div>Hello</div>",
+        "world"
+    ]
 
 testPartitionNestedDiv: boolean -> void
-testPartitionNestedDiv =
+testPartitionNestedDiv _0 =
     String.split "" "<div><div>Hello</div><div>world</div></div>"
         |> lex
         |> partition
@@ -85,7 +95,7 @@ testPartitionNestedDiv =
         |> Test.equals [ "<div><div>Hello</div><div>world</div></div>" ]
 
 testParsingDiv: boolean -> void
-testParsingDiv =
+testParsingDiv _0 =
     String.split "" "<div>Hello world</div>"
         |> lex
         |> parse
@@ -93,7 +103,7 @@ testParsingDiv =
         |> Test.equals "<div>Hello world</div>"
 
 testParsingAttributeDiv: boolean -> void
-testParsingAttributeDiv =
+testParsingAttributeDiv _0 =
     String.split "" `<div class="navbar-brand">Hello world</div>`
         |> lex
         |> parse
@@ -101,7 +111,7 @@ testParsingAttributeDiv =
         |> Test.equals `<div class="navbar-brand">Hello world</div>`
 
 testParsingNestedDiv: boolean -> void
-testParsingNestedDiv =
+testParsingNestedDiv _0 =
     String.split "" "<div><div>Hello</div><div>world</div></div>"
         |> lex
         |> parse
@@ -109,7 +119,7 @@ testParsingNestedDiv =
         |> Test.equals "<div><div>Hello</div><div>world</div></div>"
 
 testParsingSiblingDiv: boolean -> void
-testParsingSiblingDiv =
+testParsingSiblingDiv _0 =
     String.split "" "<div>Hello</div><div>world</div>"
         |> lex
         |> parse
@@ -117,7 +127,7 @@ testParsingSiblingDiv =
         |> Test.equals "<html><div>Hello</div><div>world</div></html>"
 
 testGeneratingDiv: boolean -> void
-testGeneratingDiv =
+testGeneratingDiv _0 =
     String.split "" "<div>Hello world</div>"
         |> lex
         |> parse
@@ -125,7 +135,7 @@ testGeneratingDiv =
         |> Test.equals `div [ ] [ ] [ text "Hello world" ]`
 
 testGeneratingAttributeDiv: boolean -> void
-testGeneratingAttributeDiv =
+testGeneratingAttributeDiv _0 =
     String.split "" `<div class="navbar-brand">Hello world</div>`
         |> lex
         |> parse
@@ -133,7 +143,7 @@ testGeneratingAttributeDiv =
         |> Test.equals `div [ ] [ attribute "class" "navbar-brand" ] [ text "Hello world" ]`
 
 testGeneratingNestedDiv: boolean -> void
-testGeneratingNestedDiv =
+testGeneratingNestedDiv _0 =
     String.split "" "<div><div>Hello</div><div>world</div></div>"
         |> lex
         |> parse
@@ -141,7 +151,7 @@ testGeneratingNestedDiv =
         |> Test.equals `div [ ] [ ] [ div [ ] [ ] [ text "Hello" ], div [ ] [ ] [ text "world" ] ]`
 
 testGeneratingSiblingDiv: boolean -> void
-testGeneratingSiblingDiv =
+testGeneratingSiblingDiv _0 =
     String.split "" "<div>Hello</div><div>world</div>"
         |> lex
         |> parse
@@ -149,11 +159,15 @@ testGeneratingSiblingDiv =
         |> Test.equals `html [ ] [ ] [ div [ ] [ ] [ text "Hello" ], div [ ] [ ] [ text "world" ] ]`
 
 testCombineIdentifiers: boolean -> void
-testCombineIdentifiers =
+testCombineIdentifiers _0 =
     String.split "" `Hello world`
         |> lex
         |> combineIdentifiers
         |> Test.equals {
-            left: [ Identifier { value: String.split "" `Hello`}, Space, Identifier { value: String.split "" `world` } ],
-            right: []
-        }
+        left: [
+        Identifier { value: String.split "" `Hello` },
+        Space,
+        Identifier { value: String.split "" `world` }
+    ],
+        right: [ ]
+    }

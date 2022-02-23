@@ -2,7 +2,7 @@ import "../derw-packages/derw-lang/stdlib/src/String" as String
 import "../derw-packages/derw-lang/stdlib/src/List" as List
 import "../derw-packages/derw-lang/stdlib/src/Maybe" exposing (Maybe, Just)
 exposing (lex, lexToString, Lexer, partition)
-exposing (parse, Page, pageToString, Default)
+exposing (parse, Page, pageToString)
 exposing (combineIdentifiers)
 exposing (Identifier, Space)
 exposing (generateDerw)
@@ -74,12 +74,6 @@ type alias Attribute = {
 type Page =
     Tag { name: string, children: List Page, attributes: List Attribute }
     | NormalString { value: List string }
-
-type State =
-    InTagOpener
-    | InTagContents { tagName: List string, children: List Page, depth: number }
-    | InTagCloser
-    | Default
 
 type alias SiblingSplit = {
     upToNextSibling: List Lexer,

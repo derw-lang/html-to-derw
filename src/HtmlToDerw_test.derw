@@ -2,7 +2,7 @@ import "../derw-packages/derw-lang/stdlib/src/Test" as Test
 import "../derw-packages/derw-lang/stdlib/src/String" as String
 import "../derw-packages/derw-lang/stdlib/src/List" as List
 
-import "./HtmlToDerw" exposing (lex, lexToString, pageToString, parse, Page, Default, partition, generateDerw, combineIdentifiers, Identifier, Space)
+import "./HtmlToDerw" exposing (lex, lexToString, pageToString, parse, Page, partition, generateDerw, combineIdentifiers, Identifier, Space)
 
 testLexingDiv: boolean -> void
 testLexingDiv =

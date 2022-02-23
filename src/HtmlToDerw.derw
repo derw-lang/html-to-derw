@@ -16,12 +16,13 @@ type Lexer =
     | CloseSlash
     | CloseTag
 
-type alias Split = {
-    left: List string,
-    right: List string
+
+type alias GenericSplit a = {
+    left: List a,
+    right: List a
 }
 
-collectIdentifiers: List string -> List string -> Split
+collectIdentifiers: List string -> List string -> GenericSplit string
 collectIdentifiers str left =
     case str of
         [] ->
@@ -58,7 +59,7 @@ lex str =
             Space :: lex rest
         char :: rest ->
             let
-                splited: Split
+                splited: GenericSplit string
                 splited = collectIdentifiers str []
             in
                 Identifier { value: splited.left } :: lex splited.right
@@ -91,7 +92,7 @@ splitOnSibling depth rootTagName xs progress =
         -- <div>
         OpenTag :: Identifier { value } :: rest ->
             let
-                upToClose: SplitLexer
+                upToClose: GenericSplit Lexer
                 upToClose =
                     splitOnCloseTag rest
 
@@ -150,12 +151,7 @@ splitOnSibling depth rootTagName xs progress =
         default ->
             { upToNextSibling: [], nextSiblingOnWards: [] }
 
-type alias SplitLexer = {
-    left: List Lexer,
-    right: List Lexer
-}
-
-splitOnCloseTag: List Lexer -> SplitLexer
+splitOnCloseTag: List Lexer -> GenericSplit Lexer
 splitOnCloseTag xs =
     case xs of
         CloseTag :: rest ->
@@ -163,7 +159,7 @@ splitOnCloseTag xs =
 
         elem :: rest ->
             let
-                onRest: SplitLexer
+                onRest: GenericSplit Lexer
                 onRest =
                     splitOnCloseTag rest
             in
@@ -259,7 +255,7 @@ parse lexed =
                 case single of
                     OpenTag :: Identifier { value } :: rest ->
                         let
-                            upToClose: SplitLexer
+                            upToClose: GenericSplit Lexer
                             upToClose =
                                 splitOnCloseTag rest
 
@@ -355,11 +351,6 @@ pageToString page =
 generateAttribute: Attribute -> string
 generateAttribute attribute =
     `attribute "${attribute.name}" "${attribute.value}"`
-
-type alias GenericSplit a = {
-    left: List a,
-    right: List a
-}
 
 combineIdentifiers: List Lexer -> GenericSplit Lexer
 combineIdentifiers xs =

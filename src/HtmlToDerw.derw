@@ -288,19 +288,54 @@ dropClosingTag xs =
         default ->
             [ ]
 
+splitOnSpeech: List Lexer -> GenericSplit Lexer
+splitOnSpeech xs =
+    case xs of
+        Speech :: rest ->
+            {
+                left: [ ],
+                right: rest
+            }
+
+        elem :: rest ->
+            let
+                onRest: GenericSplit Lexer
+                onRest =
+                    splitOnSpeech rest
+            in
+                {
+                    left: elem :: onRest.left,
+                    right: onRest.right
+                }
+
+        default ->
+            {
+                left: [ ],
+                right: [ ]
+            }
+
 parseAttributes: List Lexer -> List Attribute
 parseAttributes xs =
     case xs of
-        Identifier { value } :: Assign :: Speech :: Identifier { value: other } :: Speech :: rest ->
+        Identifier { value } :: Assign :: Speech :: rest ->
             let
+                upToSpeech: GenericSplit Lexer
+                upToSpeech =
+                    splitOnSpeech rest
+
+                lexed: string
+                lexed =
+                    lexToString upToSpeech.left
+                        |> String.join ""
+
                 attr: Attribute
                 attr =
                     {
                         name: String.join "" value,
-                        value: String.join "" other
+                        value: lexed
                     }
             in
-                attr :: parseAttributes rest
+                attr :: parseAttributes upToSpeech.right
 
         Space :: rest ->
             parseAttributes rest
@@ -484,7 +519,9 @@ generateDerw page =
             let
                 contents: string
                 contents =
-                    String.join ", " (List.map generateDerw children)
+                    case children of
+                        [] -> ""
+                        default -> String.join ", " (List.map generateDerw children) + " "
 
                 attrs: string
                 attrs =
@@ -492,10 +529,10 @@ generateDerw page =
             in
                 case attributes of
                     [] ->
-                        `${name} [ ] [ ] [ ${contents} ]`
+                        `${name} [ ] [ ] [ ${contents}]`
 
                     default ->
-                        `${name} [ ] [ ${attrs} ] [ ${contents} ]`
+                        `${name} [ ] [ ${attrs} ] [ ${contents}]`
 
 htmlToDerw: string -> string
 htmlToDerw input =

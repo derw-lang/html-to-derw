@@ -22,6 +22,15 @@ testLexingAttributeDiv _0 =
         |> String.join ""
         |> Test.equals `<div class="navbar-brand">Hello world</div>`
 
+
+testLexingMultipleAttributeDiv: boolean -> void
+testLexingMultipleAttributeDiv _0 =
+    String.split "" `<nav class="navbar navbar-light"></nav>`
+        |> lex
+        |> lexToString
+        |> String.join ""
+        |> Test.equals `<nav class="navbar navbar-light"></nav>`
+
 testLexingNestedDiv: boolean -> void
 testLexingNestedDiv _0 =
     String.split "" "<div><div>Hello</div> <div>world</div></div>"
@@ -47,6 +56,15 @@ testPartitionAttributeDiv _0 =
         |> List.map lexToString
         |> List.map (\x -> String.join "" x)
         |> Test.equals [ `<div class="navbar-brand">Hello world</div>` ]
+
+testPartitionMultipleAttributeDiv: boolean -> void
+testPartitionMultipleAttributeDiv _0 =
+    String.split "" `<nav class="navbar navbar-light"></nav>`
+        |> lex
+        |> partition
+        |> List.map lexToString
+        |> List.map (\x -> String.join "" x)
+        |> Test.equals [ `<nav class="navbar navbar-light"></nav>` ]
 
 testPartitionSiblingDiv: boolean -> void
 testPartitionSiblingDiv _0 =
@@ -110,6 +128,14 @@ testParsingAttributeDiv _0 =
         |> pageToString
         |> Test.equals `<div class="navbar-brand">Hello world</div>`
 
+testParsingMultipleAttributeDiv: boolean -> void
+testParsingMultipleAttributeDiv _0 =
+    String.split "" `<nav class="navbar navbar-light"></nav>`
+        |> lex
+        |> parse
+        |> pageToString
+        |> Test.equals `<nav class="navbar navbar-light"></nav>`
+
 testParsingNestedDiv: boolean -> void
 testParsingNestedDiv _0 =
     String.split "" "<div><div>Hello</div><div>world</div></div>"
@@ -141,6 +167,14 @@ testGeneratingAttributeDiv _0 =
         |> parse
         |> generateDerw
         |> Test.equals `div [ ] [ attribute "class" "navbar-brand" ] [ text "Hello world" ]`
+
+testGeneratingMultipleAttributeDiv: boolean -> void
+testGeneratingMultipleAttributeDiv _0 =
+    String.split "" `<nav class="navbar navbar-light"></nav>`
+        |> lex
+        |> parse
+        |> generateDerw
+        |> Test.equals `nav [ ] [ attribute "class" "navbar navbar-light" ] [ ]`
 
 testGeneratingNestedDiv: boolean -> void
 testGeneratingNestedDiv _0 =
